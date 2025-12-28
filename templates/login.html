@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="h-[80vh] flex flex-col items-center justify-center">
+    <div class="card w-full bg-base-100/50 backdrop-blur border border-cyan-500 shadow-[0_0_30px_rgba(6,182,212,0.2)]">
+        <div class="card-body items-center text-center">
+            <h1 class="text-3xl font-pixel text-cyan-400 mb-6 drop-shadow-md">SYSTEM LOGIN</h1>
+            
+            <form method="post" class="w-full space-y-4">
+                {% csrf_token %}
+                <div class="form-control">
+                    <label class="label"><span class="label-text text-cyan-200">کد کاربری</span></label>
+                    <input type="text" name="username" placeholder="Username" class="input input-bordered input-info bg-black/50 text-center" />
+                </div>
+                <div class="form-control">
+                    <label class="label"><span class="label-text text-cyan-200">کلید امنیتی</span></label>
+                    <input type="password" name="password" placeholder="••••••" class="input input-bordered input-info bg-black/50 text-center" />
+                </div>
+                <button type="submit" class="btn btn-info w-full mt-4 font-bold tracking-widest">ورود به سیستم 🚀</button>
+            </form>
+
+            <div class="divider text-xs text-gray-500">یا</div>
+            <a href="/signup/" class="btn btn-outline btn-warning btn-sm w-full">ثبت نام حساب جدید</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="h-[80vh] flex flex-col items-center justify-center">
+    <div class="card w-full bg-base-100/50 backdrop-blur border border-purple-500 shadow-[0_0_30px_rgba(217,70,239,0.2)]">
+        <div class="card-body items-center text-center">
+            <h1 class="text-2xl font-bold text-purple-400 mb-4">ایجاد حساب جدید</h1>
+            
+            <form method="post" class="w-full space-y-3">
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-purple-200 text-xs">{{ field.label }}</span></label>
+                    {{ field }} <!-- فیلدهای فرم باید کلاس Tailwind داشته باشند یا در ویو تنظیم شوند -->
+                    {% if field.errors %}
+                    <span class="text-error text-[10px] mt-1">{{ field.errors.0 }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary w-full mt-6">تایید و ساخت 🌟</button>
+            </form>
+            
+            <a href="/login/" class="link link-hover text-xs text-gray-400 mt-4">حساب دارید؟ وارد شوید</a>
+        </div>
+    </div>
+</div>
+<style>
+    /* استایل‌دهی سریع به فیلدهای پیش‌فرض جنگو */
+    input[type="text"], input[type="password"], input[type="email"] {
+        width: 100%; background: rgba(0,0,0,0.5); border: 1px solid #4b5563; padding: 0.5rem; border-radius: 0.5rem; color: white;
+    }
+</style>
+{% endblock %}

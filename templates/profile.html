@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="text-center pt-6">
+    
+    <!-- Big Avatar -->
+    <div class="avatar mb-4">
+        <div class="w-24 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2 shadow-2xl">
+            {% if profile.avatar %}
+                <img src="{{ profile.avatar.image.url }}" />
+            {% else %}
+                <img src="https://ui-avatars.com/api/?name={{ user.username }}" />
+            {% endif %}
+        </div>
+    </div>
+    
+    <h2 class="text-2xl font-bold text-white">{{ user.username }}</h2>
+    <p class="text-xs text-gray-500 mb-6">عضویت: {{ user.date_joined|date:"Y/m/d" }}</p>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-3 gap-2 mb-8">
+        <div class="bg-gray-900 p-2 rounded border border-gray-800">
+            <div class="text-[10px] text-gray-400">سکه</div>
+            <div class="text-yellow-400 font-bold">{{ profile.coins }}</div>
+        </div>
+        <div class="bg-gray-900 p-2 rounded border border-gray-800">
+            <div class="text-[10px] text-gray-400">الماس</div>
+            <div class="text-cyan-400 font-bold">{{ profile.diamonds }}</div>
+        </div>
+        <div class="bg-gray-900 p-2 rounded border border-gray-800">
+            <div class="text-[10px] text-gray-400">تجهیزات</div>
+            <div class="text-purple-400 font-bold">{{ profile.inventory_set.count }}</div>
+        </div>
+    </div>
+
+    <div class="bg-gray-900 p-3 rounded-xl border border-amber-700 text-left mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="text-xs text-amber-300 font-bold">دستاوردها</div>
+                <div class="text-[11px] text-gray-400">{{ user_achievements|length }} / {{ all_achievements|length }} unlocked</div>
+            </div>
+            <a href="/achievements/" class="btn btn-xs btn-amber-500">مشاهده</a>
+        </div>
+        <div class="flex flex-wrap gap-2 mt-2">
+            {% for ua in user_achievements|slice:":4" %}
+            <span class="badge badge-success badge-sm">{{ ua.achievement.title }}</span>
+            {% empty %}
+            <span class="text-[11px] text-gray-500">هنوز دستاوردی ندارید.</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Avatar Selection -->
+    <div class="divider text-xs text-gray-600">انتخاب آواتار</div>
+    <div class="grid grid-cols-4 gap-2 mb-10">
+        {% for inv in my_avatars %}
+        <div onclick="equipAvatar({{ inv.item.id }})" 
+             class="cursor-pointer border rounded-lg p-1 transition hover:scale-105 {% if profile.avatar.id == inv.item.id %}border-green-500 bg-green-900/20{% else %}border-gray-800 bg-gray-900{% endif %}">
+            <img src="{{ inv.item.image.url }}" class="w-full h-auto rounded">
+        </div>
+        {% empty %}
+        <p class="col-span-4 text-xs text-gray-500">آواتاری خریداری نشده است.</p>
+        {% endfor %}
+    </div>
+
+    <a href="/logout/" class="btn btn-outline btn-error btn-sm w-full"><i class="fas fa-sign-out-alt"></i> خروج از حساب</a>
+</div>
+
+<script>
+    function equipAvatar(id) {
+        const fd = new FormData(); fd.append('item_id', id);
+        fetch('/api/equip-avatar/', {method:'POST', body:fd, headers: {'X-CSRFToken': '{{ csrf_token }}'}})
+        .then(r=>r.json()).then(d=>{ showToast(d.message); if(d.status==='success') location.reload(); });
+    }
+</script>
+{% endblock %}

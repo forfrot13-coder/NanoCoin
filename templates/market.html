@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div x-data="{ mode: 'BUY' }" class="pb-10 space-y-6">
+    <div class="grid grid-cols-3 bg-gray-900 rounded-lg p-1 mb-2 md:max-w-xl md:mx-auto">
+        <button class="py-2 rounded text-xs md:text-sm font-bold transition" 
+                :class="mode==='BUY' ? 'bg-fuchsia-600 text-white' : 'text-gray-500'" @click="mode='BUY'">
+            خرید مستقیم
+        </button>
+        <button class="py-2 rounded text-xs md:text-sm font-bold transition" 
+                :class="mode==='SELL' ? 'bg-green-600 text-white' : 'text-gray-500'" @click="mode='SELL'">
+            فروش فوری
+        </button>
+        <button class="py-2 rounded text-xs md:text-sm font-bold transition" 
+                :class="mode==='AUCTION' ? 'bg-amber-600 text-white' : 'text-gray-500'" @click="mode='AUCTION'">
+            حراجی
+        </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+        <!-- Buy Section -->
+        <div x-show="mode === 'BUY'" x-cloak class="space-y-3 lg:col-span-2">
+            {% for listing in listings %}
+            <div class="flex items-center justify-between bg-gray-900 border border-fuchsia-900/50 p-3 md:p-4 rounded-xl shadow-lg">
+                <div class="flex items-center gap-3 md:gap-4">
+                    <div class="w-12 h-12 rounded bg-black border border-fuchsia-500 flex items-center justify-center">
+                        {% if listing.item.image %}<img src="{{ listing.item.image.url }}" class="w-10 h-10 object-contain">{% else %}💎{% endif %}
+                    </div>
+                    <div>
+                        <div class="font-bold text-sm md:text-base text-fuchsia-100">{{ listing.item.name }}</div>
+                        <div class="text-[10px] md:text-xs text-gray-500">فروشنده: {{ listing.seller.user.username }}</div>
+                    </div>
+                </div>
+                <button onclick="buyListing({{ listing.id }})" class="btn btn-sm md:btn-md btn-outline btn-secondary whitespace-nowrap">
+                    {{ listing.price }} الماس
+                </button>
+            </div>
+            {% empty %}
+            <div class="alert alert-ghost text-xs">آگهی فعالی برای خرید نیست.</div>
+            {% endfor %}
+        </div>
+
+        <!-- Sell & Auction Column -->
+        <div class="space-y-4 lg:col-span-1">
+            <!-- Sell Section -->
+            <div x-show="mode === 'SELL'" x-cloak class="bg-gray-900 border border-green-900 p-3 md:p-4 rounded-xl">
+                <div class="text-xs md:text-sm text-green-200 font-bold mb-3">فروش فوری به بازیکنان</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 max-h-[480px] overflow-auto pr-1">
+                    {% for inv in my_inventory %}
+                    <div class="border border-green-800 rounded-lg p-3 flex flex-col gap-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-black rounded-full flex items-center justify-center border border-green-600">
+                                {% if inv.item.image %}<img src="{{ inv.item.image.url }}" class="w-10 h-10 object-contain">{% else %}🎒{% endif %}
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold">{{ inv.item.name }}</div>
+                                <div class="text-[10px] text-gray-500">x{{ inv.quantity }}</div>
+                            </div>
+                        </div>
+                        <div class="join w-full">
+                            <input type="number" id="price-{{ inv.item.id }}" placeholder="قیمت" class="join-item input input-xs input-bordered w-full text-center">
+                            <button onclick="sellItem({{ inv.item.id }})" class="join-item btn btn-xs btn-success">ثبت</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Auction Section -->
+            <div x-show="mode === 'AUCTION'" x-cloak class="bg-gray-900 border border-amber-700 p-3 md:p-4 rounded-xl space-y-4">
+                <div>
+                    <div class="text-xs md:text-sm text-amber-200 font-bold mb-2">ساخت حراج جدید</div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <select id="auction-item" class="select select-sm select-bordered bg-black/40 text-xs">
+                            {% for inv in my_inventory %}
+                            <option value="{{ inv.item.id }}">{{ inv.item.name }} (x{{ inv.quantity }})</option>
+                            {% endfor %}
+                        </select>
+                        <input id="auction-start" type="number" placeholder="قیمت شروع" class="input input-sm input-bordered bg-black/40 text-xs" />
+                        <input id="auction-buynow" type="number" placeholder="خرید فوری (اختیاری)" class="input input-sm input-bordered bg-black/40 text-xs" />
+                        <input id="auction-duration" type="number" placeholder="مدت (ساعت) پیش‌فرض 24" class="input input-sm input-bordered bg-black/40 text-xs" />
+                    </div>
+                    <button onclick="createAuction()" class="btn btn-sm btn-amber-500 mt-3 w-full">ثبت حراج</button>
+                </div>
+
+                <div class="space-y-3 max-h-[520px] overflow-auto pr-1">
+                    {% for auc in auctions %}
+                    <div class="bg-gray-800/80 border border-amber-700 p-3 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded bg-black border border-amber-500 flex items-center justify-center">
+                                {% if auc.item.image %}<img src="{{ auc.item.image.url }}" class="w-8 h-8 object-contain">{% else %}🎯{% endif %}
+                            </div>
+                            <div>
+                                <div class="font-bold text-sm text-amber-100">{{ auc.item.name }}</div>
+                                <div class="text-[10px] text-gray-500">فروشنده: {{ auc.seller.user.username }}</div>
+                                <div class="text-[10px] text-gray-400">پایان: {{ auc.ends_at|date:"Y-m-d H:i" }}</div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1 items-end text-right">
+                            <div class="text-xs text-amber-200">آخرین پیشنهاد: {{ auc.current_price }}</div>
+                            {% if auc.current_bidder %}
+                            <div class="text-[10px] text-gray-500">توسط {{ auc.current_bidder.user.username }}</div>
+                            {% endif %}
+                            <div class="join">
+                                <input type="number" id="bid-{{ auc.id }}" placeholder="پیشنهاد" class="join-item input input-xs input-bordered bg-black/40 w-24 text-center">
+                                <button onclick="bidAuction({{ auc.id }})" class="join-item btn btn-xs btn-warning">ثبت</button>
+                            </div>
+                            {% if auc.buy_now_price %}
+                            <button onclick="buyNowAuction({{ auc.id }})" class="btn btn-xs btn-outline btn-success">خرید فوری {{ auc.buy_now_price }}</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="alert alert-ghost text-xs">حراج فعالی وجود ندارد.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function buyListing(id) {
+        if(!confirm("خرید انجام شود؟")) return;
+        const fd = new FormData(); fd.append('listing_id', id);
+        fetch('/api/market/buy/', {method:'POST', body:fd, headers: {'X-CSRFToken': '{{ csrf_token }}'}})
+        .then(r=>r.json()).then(d=>{ showToast(d.message, d.status==='success'?'success':'error'); if(d.status==='success') location.reload(); });
+    }
+    function sellItem(id) {
+        const p = document.getElementById('price-'+id).value;
+        if(!p) return showToast('قیمت را وارد کنید', 'error');
+        const fd = new FormData(); fd.append('item_id', id); fd.append('price', p);
+        fetch('/api/market/sell/', {method:'POST', body:fd, headers: {'X-CSRFToken': '{{ csrf_token }}'}})
+        .then(r=>r.json()).then(d=>{ showToast(d.message); if(d.status==='success') location.reload(); });
+    }
+
+    function createAuction() {
+        const item = document.getElementById('auction-item').value;
+        const start = document.getElementById('auction-start').value;
+        const buyNow = document.getElementById('auction-buynow').value;
+        const duration = document.getElementById('auction-duration').value;
+        const fd = new FormData();
+        fd.append('item_id', item);
+        fd.append('start_price', start);
+        if(buyNow) fd.append('buy_now_price', buyNow);
+        if(duration) fd.append('duration_hours', duration);
+        fetch('/api/auction/create/', {method:'POST', body:fd, headers: {'X-CSRFToken': '{{ csrf_token }}'}})
+        .then(r=>r.json()).then(d=>{ showToast(d.message, d.status==='success'?'success':'error'); if(d.status==='success') location.reload(); });
+    }
+
+    function bidAuction(id) {
+        const bid = document.getElementById('bid-'+id).value;
+        if(!bid) return showToast('مبلغ پیشنهاد را وارد کنید', 'error');
+        const fd = new FormData();
+        fd.append('auction_id', id);
+        fd.append('bid_amount', bid);
+        fetch('/api/auction/bid/', {method:'POST', body:fd, headers: {'X-CSRFToken': '{{ csrf_token }}'}})
+        .then(r=>r.json()).then(d=>{ showToast(d.message, d.status==='success'?'success':'error'); if(d.status==='success') location.reload(); });
+    }
+
+    function buyNowAuction(id) {
+        if(!confirm('خرید فوری انجام شود؟')) return;
+        const fd = new FormData();
+        fd.append('auction_id', id);
+        fd.append('buy_now', '1');
+        fetch('/api/auction/bid/', {method:'POST', body:fd, headers: {'X-CSRFToken': '{{ csrf_token }}'}})
+        .then(r=>r.json()).then(d=>{ showToast(d.message, d.status==='success'?'success':'error'); if(d.status==='success') location.reload(); });
+    }
+</script>
+{% endblock %}

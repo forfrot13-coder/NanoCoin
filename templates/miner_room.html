@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="flex flex-col gap-6 pb-20 pt-4">
+
+    <!-- 1. پنل مانیتورینگ (HUD) -->
+    <div class="relative bg-gray-900/60 border border-cyan-500/30 rounded-2xl p-4 backdrop-blur-md overflow-hidden">
+        <!-- خط‌های تزئینی پس‌زمینه -->
+        <div
+            class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50">
+        </div>
+        <div class="absolute -right-10 -top-10 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl"></div>
+
+        <div class="flex items-center justify-between gap-4">
+
+            <!-- سمت راست: وضعیت برق (نمودار دایره‌ای) -->
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <!-- محاسبه درصد برق با تگ widthratio صحیح -->
+                    <!-- فرمول: (موجودی / حداکثر) * 100 -->
+                    <div class="radial-progress text-cyan-400 text-[10px] font-bold"
+                        style="--value:{% widthratio profile.electricity profile.max_electricity 100 %}; --size:3.5rem; --thickness: 4px;"
+                        role="progressbar">
+                        <i
+                            class="fas fa-bolt text-lg {% if profile.electricity < 100 %}text-red-500 animate-pulse{% endif %}"></i>
+                    </div>
+                    <!-- سایه نورانی -->
+                    <div class="absolute inset-0 bg-cyan-400/20 blur-xl rounded-full -z-10"></div>
+                </div>
+
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-gray-400 uppercase tracking-wider">Power Grid</span>
+                    <div class="flex items-baseline gap-1" dir="ltr">
+                        <span class="text-xl font-bold text-white font-pixel">{{ profile.electricity }}</span>
+                        <span class="text-xs text-gray-500">/ {{ profile.max_electricity }}</span>
+                    </div>
+                    <!-- دکمه شارژ سریع -->
+                    <button onclick="document.getElementById('energy_shop').showModal()"
+                        class="btn btn-xs btn-outline btn-warning mt-1 border-yellow-500/50 hover:bg-yellow-500 hover:text-black">
+                        <i class="fas fa-charging-station"></i> شارژ
+                    </button>
+                </div>
+            </div>
+
+            <!-- سمت چپ: آمار تولید -->
+            <div class="text-left space-y-2">
+                <div class="shine-bar">
+                    <div class="text-[9px] text-gray-400">OUTPUT (فعال)</div>
+                    <div class="text-green-400 font-bold font-pixel text-base drop-shadow-[0_0_6px_rgba(74,222,128,0.6)]" dir="ltr">
+                        +{{ total_rate }} <span class="text-[9px] text-gray-500">Coins/h</span>
+                    </div>
+                    <div class="text-[10px] text-gray-400" dir="ltr">≈ {{ total_rate|floatformat:2 }} /h</div>
+                    {% if total_rate > 0 and profile.electricity > 0 %}
+                    <div class="text-[10px] text-green-400 flex items-center gap-1"><i class="fas fa-signal"></i> استخراج آنلاین فعال است</div>
+                    {% else %}
+                    <div class="text-[10px] text-red-400 flex items-center gap-1"><i class="fas fa-plug"></i> استخراج متوقف است</div>
+                    {% endif %}
+                </div>
+                <div>
+                    <div class="text-[9px] text-gray-400">CONSUMPTION</div>
+                    <div class="text-red-400 font-bold font-pixel text-sm" dir="ltr">
+                        {{ total_consumption }} <span class="text-[9px] text-gray-500">Watts</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. قفسه سرور (Server Rack) -->
+    <div class="relative">
+        <h3 class="flex items-center gap-2 text-sm text-gray-300 font-bold mb-3 px-2">
+            <i class="fas fa-server text-cyan-500"></i> RACK MOUNT
+            <span
+                class="ml-auto text-[10px] text-gray-600 bg-gray-900 px-2 py-0.5 rounded border border-gray-800">Capacity:
+                Unlimited</span>
+        </h3>
+
+        <div class="grid grid-cols-1 gap-3">
+            {% for inv in miners %}
+            <div
+                class="relative bg-gray-900 border-l-4 {% if inv.is_active %}border-l-green-500{% else %}border-l-gray-700{% endif %} border-y border-r border-gray-800 p-3 rounded-r-lg shadow-lg flex items-center justify-between group overflow-hidden">
+
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+
+                <div class="flex items-center gap-4 z-10">
+                    <div class="w-14 h-14 bg-black rounded flex items-center justify-center border border-gray-700 shadow-inner relative overflow-hidden">
+                        {% if inv.item.image %}
+                        <img src="{{ inv.item.image.url }}" class="w-full h-full object-contain">
+                        {% else %}
+                        <i class="fas fa-microchip text-2xl text-gray-400"></i>
+                        {% endif %}
+                        <div class="absolute top-1 right-1 w-1.5 h-1.5 rounded-full {% if inv.is_active and profile.electricity > 0 %}bg-green-500 shadow-[0_0_5px_lime] animate-pulse{% else %}bg-red-500{% endif %}"></div>
+                    </div>
+
+                    <div>
+                        <div class="font-bold text-gray-200 text-sm">{{ inv.item.name }}</div>
+                        <div class="flex items-center gap-2 text-[11px] text-gray-500 mt-1 flex-wrap" dir="ltr">
+                            <span class="flex items-center gap-1 bg-black/30 px-2 py-0.5 rounded border border-gray-700">
+                                <i class="fas fa-tachometer-alt text-yellow-600"></i>
+                                <span class="font-mono text-gray-300">{{ inv.item.mining_rate }}</span>/h
+                            </span>
+                            <span class="flex items-center gap-1 bg-black/30 px-2 py-0.5 rounded border border-gray-700">
+                                <i class="fas fa-bolt text-blue-600"></i>
+                                <span class="font-mono text-gray-300">{{ inv.item.electricity_consumption }}</span>W
+                            </span>
+                            <span class="flex items-center gap-1 bg-black/30 px-2 py-0.5 rounded border border-gray-700">
+                                <i class="fas fa-coins text-green-500"></i>
+                                <span class="font-mono text-gray-300">+{{ inv.item.mining_rate|floatformat:0 }}</span> x{{ inv.quantity }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-end gap-1 z-10">
+                    <div class="badge badge-neutral text-xs font-mono border-gray-600">x{{ inv.quantity }}</div>
+                    {% if not inv.is_active %}
+                        <span class="text-[9px] text-red-400 font-bold">خاموش</span>
+                    {% elif profile.electricity <= 0 %}
+                        <span class="text-[9px] text-red-500 font-bold animate-pulse">OFFLINE</span>
+                    {% else %}
+                        <span class="text-[9px] text-green-500 font-bold">RUNNING</span>
+                    {% endif %}
+                    <label class="label cursor-pointer gap-2 mt-1">
+                        <span class="text-[9px] text-gray-400">فعال</span>
+                        <input type="checkbox" {% if inv.is_active %}checked{% endif %} onchange="toggleMiner({{ inv.item.id }}, this.checked)" class="toggle toggle-sm toggle-success" />
+                    </label>
+                </div>
+            </div>
+            {% empty %}
+
+            <!-- حالت خالی (Empty State) - طراحی شده شبیه اسلات خالی سرور -->
+            <div
+                class="col-span-1 py-12 flex flex-col items-center justify-center text-center bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] bg-gray-900/50 rounded-xl border-2 border-dashed border-gray-800">
+                <div
+                    class="w-20 h-20 bg-gray-800/50 rounded-full flex items-center justify-center mb-4 border border-gray-700">
+                    <i class="fas fa-server text-4xl text-gray-600"></i>
+                </div>
+                <p class="text-gray-400 text-sm font-bold mb-1">رک سرور خالی است!</p>
+                <p class="text-gray-600 text-xs mb-6">برای شروع استخراج، اولین ماینر خود را بخرید.</p>
+
+                <a href="/shop/?cat=MINER"
+                    class="btn btn-primary btn-sm px-6 shadow-[0_0_15px_rgba(6,182,212,0.4)] animate-pulse">
+                    <i class="fas fa-shopping-cart"></i> خرید تجهیزات
+                </a>
+            </div>
+
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- مودال خرید انرژی -->
+    <dialog id="energy_shop" class="modal modal-bottom sm:modal-middle backdrop-blur-sm">
+        <div class="modal-box bg-[#101015] border border-yellow-600/30 shadow-[0_0_50px_rgba(234,179,8,0.15)]">
+            <h3 class="font-bold text-lg text-yellow-400 mb-4 flex items-center gap-2">
+                <i class="fas fa-bolt"></i> ایستگاه شارژ
+            </h3>
+
+            <div class="grid grid-cols-2 gap-3">
+                {% for pack in energy_packs %}
+                <button onclick="buyEnergy({{ pack.id }})"
+                    class="group relative overflow-hidden bg-gray-900 border border-yellow-500/30 hover:border-yellow-400 p-4 rounded-xl text-center transition-all">
+                    <div class="absolute inset-0 bg-yellow-500/5 group-hover:bg-yellow-500/10 transition"></div>
+                    <i class="fas fa-battery-full text-2xl text-yellow-500 mb-2"></i>
+                    <div class="text-sm font-bold text-white mb-1">{{ pack.name }}</div>
+                    <div class="badge badge-warning badge-sm">{{ pack.price_diamonds }} 💎</div>
+                </button>
+                {% empty %}
+                <div class="col-span-2 text-center text-gray-500 text-xs">پک انرژی موجود نیست.</div>
+                {% endfor %}
+            </div>
+
+            <div class="modal-action justify-center w-full">
+                <form method="dialog"><button class="btn btn-ghost btn-sm text-gray-500">انصراف</button></form>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+
+</div>
+
+<script>
+    function buyEnergy(id) {
+        const fd = new FormData(); fd.append('item_id', id);
+        fetch('/api/buy/', { method: 'POST', body: fd, headers: { 'X-CSRFToken': '{{ csrf_token }}' } })
+            .then(r => r.json()).then(d => {
+                showToast(d.message, d.status === 'success' ? 'success' : 'error');
+                if (d.status === 'success') setTimeout(() => location.reload(), 1000);
+            });
+    }
+    function toggleMiner(id, state) {
+        const fd = new FormData(); fd.append('item_id', id); fd.append('active', state ? '1' : '0');
+        fetch('/api/miner/toggle/', { method:'POST', body:fd, headers: {'X-CSRFToken': '{{ csrf_token }}'}})
+        .then(r=>r.json()).then(d => {
+            showToast(d.message, d.status==='success'?'success':'error');
+            if(d.status==='success') setTimeout(()=>location.reload(), 500);
+        });
+    }
+</script>
+
+<style>
+    @keyframes shimmer {
+        0% {
+            transform: translateX(-100%);
+        }
+
+        100% {
+            transform: translateX(100%);
+        }
+    }
+</style>
+{% endblock %}

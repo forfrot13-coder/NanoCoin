@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+{% block content %}
+<div x-data="gameLogic()" class="flex flex-col items-center min-h-[75vh] justify-start pt-6 pb-6 relative gap-4">
+
+    <!-- Glow BG -->
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-blue-900/20 rounded-full blur-[90px] pointer-events-none -z-10"></div>
+
+    <!-- Balance -->
+    <div class="text-center z-10">
+        <div class="text-[9px] text-gray-500 tracking-[0.35em] uppercase mb-1">Total Balance</div>
+        <div class="text-5xl md:text-6xl font-pixel text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 drop-shadow-[0_0_20px_rgba(234,179,8,0.45)] tracking-tighter" 
+             x-text="formatNumber(coins)">
+            {{ profile.coins }}
+        </div>
+    </div>
+
+    <!-- Click Area -->
+    <div class="relative w-full flex items-center justify-center">
+        <div class="absolute w-56 h-56 bg-yellow-500/10 rounded-full blur-[50px] animate-pulse-slow"></div>
+
+        <div class="relative w-56 h-56 md:w-64 md:h-64 transition-transform duration-75 cursor-pointer touch-manipulation active:scale-95 active:rotate-3 z-20" 
+             @touchstart.prevent="handleClick($event)" 
+             @mousedown="handleClick($event)">
+            
+            {% if user.playerprofile.equipped_skin %}
+                <img src="{{ user.playerprofile.equipped_skin.image.url }}" class="w-full h-full object-contain drop-shadow-[0_8px_14px_rgba(0,0,0,0.45)] filter contrast-125">
+            {% else %}
+                <div class="w-full h-full flex items-center justify-center text-[96px] leading-none filter drop-shadow-[0_0_15px_rgba(255,200,0,0.4)] transition hover:drop-shadow-[0_0_25px_rgba(255,200,0,0.6)]">🍌</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Stats, Boost, Energy -->
+    <div class="w-full max-w-md space-y-3 z-10 px-2">
+        <div class="bg-gray-900/70 border border-gray-800 rounded-xl p-3">
+            <div class="flex items-center justify-between text-[11px] text-gray-400 mb-1">
+                <span>Level {{ profile.click_level }}</span>
+                <span>{{ profile.click_xp }}/{{ profile.click_xp_to_next }} XP</span>
+            </div>
+            <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-yellow-400 to-orange-400" style="width: {{ profile.click_xp|floatformat:0|divisibleby:profile.click_xp_to_next }}%"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-gray-900/70 border border-purple-700/50 rounded-xl p-3 flex flex-col gap-2">
+                <div class="flex items-center justify-between text-xs text-gray-300">
+                    <span>Boost کلیک</span>
+                    <span id="boost-timer" class="{% if active_boost %}text-purple-300{% else %}text-gray-500{% endif %}">{% if active_boost %}{{ active_boost.seconds_left }}s{% else %}خاموش{% endif %}</span>
+                </div>
+                <button class="btn btn-xs btn-purple-500 w-full" onclick="activateBoost()">
+                    {% if active_boost %}تمدید بوست{% else %}فعال‌سازی ۲x (۵💎){% endif %}
+                </button>
+            </div>
+
+            <div class="relative w-full h-6 bg-gray-900/80 rounded-full border border-gray-700 overflow-hidden shadow-inner self-end">
+                <div class="absolute top-0 left-0 h-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-300 transition-all duration-300 ease-out shadow-[0_0_15px_#facc15]" 
+                     :style="`width: ${(energy / maxEnergy) * 100}%`"></div>
+                <div class="absolute inset-0 flex items-center justify-center text-[11px] font-bold z-10" dir="ltr">
+                    <i class="fas fa-bolt text-black/70 mr-1.5 animate-pulse"></i>
+                    <span class="text-black drop-shadow-sm" x-text="`${energy} / ${maxEnergy}`"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+            <button @click="collectMine()" class="relative overflow-hidden group btn border-0 bg-gradient-to-br from-gray-800 to-gray-900 text-white shadow-lg border-b-2 border-green-500 hover:border-green-400">
+                <div class="absolute inset-0 bg-green-500/10 group-hover:bg-green-500/20 transition"></div>
+                <div class="flex flex-col items-center gap-1 relative z-10">
+                    <i class="fas fa-hammer text-green-400 text-lg"></i>
+                    <span class="text-xs font-bold text-gray-200">برداشت ماین</span>
+                </div>
+            </button>
+
+            <button onclick="my_modal_daily.showModal()" class="relative overflow-hidden group btn border-0 bg-gradient-to-br from-gray-800 to-gray-900 text-white shadow-lg border-b-2 border-yellow-500 hover:border-yellow-400">
+                <div class="absolute inset-0 bg-yellow-500/10 group-hover:bg-yellow-500/20 transition"></div>
+                <div class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+                
+                <div class="flex flex-col items-center gap-1 relative z-10">
+                    <i class="fas fa-gift text-yellow-400 text-lg"></i>
+                    <span class="text-xs font-bold text-gray-200">جایزه روزانه</span>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Quests -->
+    <div class="w-full max-w-md space-y-2 z-10 px-2">
+        <div class="flex items-center justify-between text-xs text-gray-400 px-1">
+            <span>ماموریت‌های روزانه</span>
+        </div>
+        <div class="space-y-2">
+            {% for q in quests %}
+            <div class="bg-gray-900/70 border border-gray-800 rounded-xl p-3">
+                <div class="flex items-center justify-between text-xs text-gray-200">
+                    <span>{{ q.title }}</span>
+                    <span class="{% if q.completed %}text-green-400{% else %}text-gray-400{% endif %}">
+                        {{ q.progress }}/{{ q.goal }}
+                    </span>
+                </div>
+                <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden mt-1">
+                    <div class="h-full bg-gradient-to-r from-cyan-400 to-green-400" style="width: {% widthratio q.progress q.goal 100 %}%"></div>
+                </div>
+                {% if q.completed %}
+                <div class="text-[10px] text-green-400 mt-1">پایان یافت - پاداش اعمال شد</div>
+                {% else %}
+                <div class="text-[10px] text-gray-400 mt-1">نوع: {{ q.get_quest_type_display }}</div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div class="text-xs text-gray-500 text-center">فعلا ماموریتی ندارید.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Modal Daily -->
+    <dialog id="my_modal_daily" class="modal modal-bottom sm:modal-middle backdrop-blur-sm">
+        <div class="modal-box bg-[#101015] border border-yellow-600/30 shadow-[0_0_50px_rgba(234,179,8,0.15)] p-5">
+            <h3 class="font-bold text-lg text-yellow-400 mb-1 text-center font-pixel">DAILY REWARDS</h3>
+            <p class="text-center text-xs text-gray-500 mb-6">هر روز برگردید تا جایزه بزرگتر بگیرید!</p>
+            
+            <div class="grid grid-cols-4 gap-2 mb-6">
+                {% for i in "1234567"|make_list %}
+                <div class="aspect-square flex flex-col items-center justify-center rounded-xl border {% if forloop.counter <= profile.daily_streak %}bg-yellow-500/20 border-yellow-500 text-yellow-300{% else %}bg-gray-800/50 border-gray-700 text-gray-500{% endif %}">
+                    <div class="text-[9px] mb-1">DAY {{ i }}</div>
+                    {% if forloop.counter == 7 %}
+                    <i class="fas fa-trophy text-lg animate-bounce"></i>
+                    {% else %}
+                    <i class="fas fa-coins"></i>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            
+            <button onclick="claimDaily()" class="btn btn-warning w-full font-bold shadow-[0_0_20px_rgba(250,204,21,0.4)] text-black">
+                دریافت جایزه امروز 🎁
+            </button>
+        </div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+
+</div>
+
+<script>
+    function gameLogic() {
+        return {
+            coins: {{ profile.coins }},
+            energy: {{ profile.energy }},
+            maxEnergy: {{ profile.max_energy }},
+            
+            formatNumber(num) {
+                return new Intl.NumberFormat().format(num);
+            },
+
+            handleClick(e) {
+                if(this.energy <= 0) {
+                    document.body.classList.add('animate-[shake_0.2s_ease-in-out]');
+                    setTimeout(()=>document.body.classList.remove('animate-[shake_0.2s_ease-in-out]'), 200);
+                    return showToast("انرژی کافی نیست! ⚡", "error");
+                }
+                
+                this.energy--;
+                this.coins++; 
+                this.spawnFloatingText(e);
+
+                if (navigator.vibrate) navigator.vibrate(15);
+
+                fetch('/api/click/', { method: 'POST', headers: {'X-CSRFToken': '{{ csrf_token }}'} })
+                .then(r => r.json())
+                .then(data => {
+                    if(data.status === 'success') {
+                        this.coins = data.new_coins;
+                        this.energy = data.new_energy;
+                        if(data.loot) showToast(`🎁 آیتم پیدا شد: ${data.loot}`, "success");
+                        if(data.diamond_found) showToast(`💎 الماس پیدا شد!`, "success");
+                        if(data.leveled_up) showToast(`سطح کلیک ${data.click_level} شد!`, "success");
+                        if(data.boost_seconds > 0) startBoostTimer(data.boost_seconds);
+                    } else if (data.can_refill) {
+                        showToast(`انرژی تمام شد! با ${data.refill_cost} الماس ${data.refill_amount} انرژی بگیر`, "error");
+                        if(confirm(`انرژی را با ${data.refill_cost} الماس شارژ کنم؟`)) {
+                            refillEnergy();
+                        }
+                    }
+                });
+            },
+            
+            spawnFloatingText(e) {
+                let clientX, clientY;
+                if(e.touches && e.touches.length > 0) {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                }
+                const randomX = (Math.random() - 0.5) * 40; 
+                const el = document.createElement('div');
+                el.innerText = '+1';
+                el.className = 'fixed font-bold text-3xl text-yellow-300 pointer-events-none z-50 font-pixel drop-shadow-[0_2px_0_rgba(0,0,0,0.5)]';
+                el.style.left = (clientX + randomX) + 'px';
+                el.style.top = (clientY - 40) + 'px';
+                el.style.transition = 'all 0.8s cubic-bezier(0,1,0,1)';
+                
+                document.body.appendChild(el);
+                requestAnimationFrame(() => {
+                    el.style.transform = `translateY(-150px) scale(1.5)`;
+                    el.style.opacity = '0';
+                });
+                setTimeout(() => el.remove(), 800);
+            },
+
+            collectMine() {
+                fetch('/api/mine/', { method: 'POST', headers: {'X-CSRFToken': '{{ csrf_token }}'} })
+                .then(r=>r.json()).then(d => {
+                    showToast(d.message, d.status==='success'?'success':'info');
+                    if(d.status==='success') {
+                        this.coins = d.new_coins;
+                    }
+                });
+            }
+        }
+    }
+    
+    function claimDaily() {
+        fetch('/api/daily/', { method: 'POST', headers: {'X-CSRFToken': '{{ csrf_token }}'} })
+        .then(r => r.json()).then(d => {
+            showToast(d.message, d.status==='success'?'success':'error');
+            document.getElementById('my_modal_daily').close();
+            if(d.status==='success') setTimeout(()=>location.reload(), 1500);
+        });
+    }
+
+    function refillEnergy() {
+        fetch('/api/energy/refill/', {method:'POST', headers: {'X-CSRFToken': '{{ csrf_token }}'}})
+        .then(r=>r.json()).then(d=>{
+            if(d.status==='success') {
+                showToast('انرژی شارژ شد', 'success');
+                location.reload();
+            } else {
+                showToast(d.message || 'خطا در شارژ', 'error');
+            }
+        });
+    }
+
+    function activateBoost() {
+        fetch('/api/boost/activate/', {method:'POST', headers:{'X-CSRFToken':'{{ csrf_token }}'}})
+        .then(r=>r.json()).then(d=>{
+            if(d.status!=='success') return showToast(d.message || 'خطا در بوست', 'error');
+            showToast('بوست فعال شد!', 'success');
+            startBoostTimer(d.boost_seconds);
+        });
+    }
+
+    function startBoostTimer(seconds) {
+        const el = document.getElementById('boost-timer');
+        if(!el) return;
+        let remaining = seconds;
+        el.innerText = formatSeconds(remaining);
+        const interval = setInterval(()=>{
+            remaining -= 1;
+            if(remaining <= 0) {
+                el.innerText = 'خاموش';
+                clearInterval(interval);
+            } else {
+                el.innerText = formatSeconds(remaining);
+            }
+        },1000);
+    }
+
+    function formatSeconds(s) {
+        const m = Math.floor(s/60);
+        const sec = s%60;
+        return `${m}:${sec.toString().padStart(2,'0')}`;
+    }
+
+    {% if active_boost %}
+    document.addEventListener('DOMContentLoaded', ()=>startBoostTimer({{ active_boost.seconds_left }}));
+    {% endif %}
+</script>
+{% endblock %}

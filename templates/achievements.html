@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-3xl mx-auto py-6 space-y-4">
+    <h2 class="text-xl font-bold text-amber-300 flex items-center gap-2"><i class="fas fa-trophy"></i> دستاوردها</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {% for ach in achievements %}
+        {% if ach.id in unlocked %}
+        <div class="p-4 rounded-xl border border-green-500 bg-green-900/20">
+        {% else %}
+        <div class="p-4 rounded-xl border border-gray-700 bg-gray-900">
+        {% endif %}
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center text-lg">
+                    {% if ach.icon %}<i class="{{ ach.icon }}"></i>{% else %}🏅{% endif %}
+                </div>
+                <div>
+                    <div class="font-bold text-sm">{{ ach.title }}</div>
+                    <div class="text-[11px] text-gray-400">{{ ach.description }}</div>
+                </div>
+            </div>
+            <div class="text-[11px] text-gray-400 space-y-1">
+                {% if ach.target_coins %}<div>هدف: {{ ach.target_coins }} کوین</div>{% endif %}
+                {% if ach.target_diamonds %}<div>هدف: {{ ach.target_diamonds }} الماس</div>{% endif %}
+                {% if ach.target_miners %}<div>هدف: {{ ach.target_miners }} ماینر</div>{% endif %}
+                {% if ach.reward_coins or ach.reward_diamonds %}
+                <div class="text-amber-300">پاداش: 
+                    {% if ach.reward_coins %}{{ ach.reward_coins }} کوین {% endif %}
+                    {% if ach.reward_diamonds %}{{ ach.reward_diamonds }} الماس{% endif %}
+                </div>
+                {% endif %}
+            </div>
+            {% if ach.id in unlocked %}
+            <div class="mt-2 text-xs text-green-400">آنلاک شده!</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

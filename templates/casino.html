@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="space-y-6">
+    <div class="relative overflow-hidden rounded-2xl border border-purple-700/60 bg-gradient-to-r from-purple-900/60 via-indigo-900/40 to-slate-900/70 p-5 md:p-7 shadow-[0_0_40px_rgba(147,51,234,0.25)]">
+        <div class="absolute -left-16 -top-16 w-48 h-48 bg-purple-600/20 blur-3xl"></div>
+        <div class="absolute -right-12 bottom-0 w-40 h-40 bg-cyan-500/20 blur-3xl"></div>
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 relative z-10">
+            <div>
+                <div class="text-[10px] uppercase text-purple-200/70 tracking-[0.35em]">Nano Casino</div>
+                <h2 class="text-3xl font-bold text-purple-100 drop-shadow-lg">کازینو نانو</h2>
+                <p class="text-xs text-gray-300 mt-1">بلک‌جک، انفجار، اسلات؛ شرط ببند، برنده شو، لوت ببر.</p>
+                <div class="flex gap-2 mt-3 text-[10px]">
+                    <span class="badge badge-outline badge-sm border-purple-500 text-purple-200">RNG</span>
+                    <span class="badge badge-outline badge-sm border-cyan-500 text-cyan-200">Realtime</span>
+                    <span class="badge badge-outline badge-sm border-amber-500 text-amber-200">High Risk</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 text-sm flex-wrap">
+                <div class="bg-black/50 px-4 py-2 rounded-xl border border-cyan-600/60 shadow-lg flex items-center gap-2">
+                    <i class="fas fa-gem text-cyan-400"></i><span class="font-bold">{{ profile.diamonds }}</span><span class="text-xs text-gray-400">الماس</span>
+                </div>
+                <div class="bg-black/50 px-4 py-2 rounded-xl border border-yellow-600/60 shadow-lg flex items-center gap-2">
+                    <i class="fas fa-coins text-yellow-400"></i><span class="font-bold">{{ profile.coins }}</span><span class="text-xs text-gray-400">سکه</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Blackjack -->
+        <div class="relative overflow-hidden rounded-2xl border border-purple-700/70 bg-gradient-to-br from-purple-900/70 via-gray-900 to-black shadow-lg">
+            <div class="absolute right-4 top-4 text-[10px] px-2 py-1 rounded-full bg-white/10 text-purple-100">۱٫۸-۲x</div>
+            <div class="card-body gap-3 relative z-10">
+                <div class="flex items-center gap-2 text-purple-100 font-bold text-lg">
+                    <i class="fas fa-spade"></i> بلک‌جک سریع
+                </div>
+                <p class="text-xs text-gray-300 leading-relaxed">با دیلر بازی کن؛ ۲ برابر برنده شو یا شرطت برگردد در مساوی.</p>
+                <input type="number" id="bj-bet" class="input input-bordered input-sm bg-black/60" placeholder="مبلغ شرط (الماس)">
+                <button class="btn btn-sm btn-purple-500 w-full shadow-[0_0_15px_rgba(168,85,247,0.4)]" onclick="playBlackjack()">شروع دست</button>
+                <div id="bj-result" class="text-xs text-gray-200 min-h-[32px]"></div>
+            </div>
+            <div class="absolute -left-6 bottom-0 w-24 h-24 bg-purple-600/30 blur-3xl"></div>
+        </div>
+
+        <!-- Crash -->
+        <div class="relative overflow-hidden rounded-2xl border border-amber-700/70 bg-gradient-to-br from-amber-900/60 via-gray-900 to-black shadow-lg">
+            <div class="absolute right-4 top-4 text-[10px] px-2 py-1 rounded-full bg-white/10 text-amber-200">۱٫۱ - ۱۰x</div>
+            <div class="card-body gap-3 relative z-10">
+                <div class="flex items-center gap-2 text-amber-200 font-bold text-lg">
+                    <i class="fas fa-rocket"></i> انفجار (Crash)
+                </div>
+                <p class="text-xs text-gray-300 leading-relaxed">ضریب هدف را بزن؛ اگر قبل از کرش بیرون بیایی، شرط * ضریب می‌بری.</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="number" id="crash-bet" class="input input-bordered input-sm bg-black/60" placeholder="شرط (الماس)">
+                    <input type="number" step="0.1" id="crash-target" class="input input-bordered input-sm bg-black/60" placeholder="ضریب (۱٫۱ تا ۱۰)">
+                </div>
+                <button class="btn btn-sm btn-warning w-full shadow-[0_0_15px_rgba(251,191,36,0.35)]" onclick="playCrash()">استارت</button>
+                <div id="crash-result" class="text-xs text-gray-200 min-h-[32px]"></div>
+            </div>
+            <div class="absolute -right-6 bottom-0 w-28 h-28 bg-amber-500/25 blur-3xl"></div>
+        </div>
+
+        <!-- Slots -->
+        <div class="relative overflow-hidden rounded-2xl border border-pink-700/70 bg-gradient-to-br from-pink-900/60 via-gray-900 to-black shadow-lg">
+            <div class="absolute right-4 top-4 text-[10px] px-2 py-1 rounded-full bg-white/10 text-pink-200">۲x / ۵-۲۰x</div>
+            <div class="card-body gap-3 relative z-10">
+                <div class="flex items-center gap-2 text-pink-100 font-bold text-lg">
+                    <i class="fas fa-dice-three"></i> اسلات ماشین
+                </div>
+                <p class="text-xs text-gray-300 leading-relaxed">سه تایی نماد = ضرب بالا؛ دوتایی = ۲x. پرداخت به الماس و سکه.</p>
+                <input type="number" id="slots-bet" class="input input-bordered input-sm bg-black/60" placeholder="مبلغ شرط (الماس)">
+                <button class="btn btn-sm btn-pink-500 w-full shadow-[0_0_15px_rgba(236,72,153,0.35)]" onclick="playSlots()">چرخش</button>
+                <div id="slots-result" class="text-xs text-gray-200 min-h-[32px]"></div>
+            </div>
+            <div class="absolute -left-8 top-0 w-28 h-28 bg-pink-500/25 blur-3xl"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateDiamonds(val) {
+        document.querySelectorAll('[id$="diamonds"]').forEach(el => el.textContent = val);
+    }
+
+    function playBlackjack() {
+        const bet = document.getElementById('bj-bet').value;
+        const fd = new FormData(); fd.append('bet', bet);
+        fetch('/api/casino/blackjack/', {method:'POST', body:fd, headers: {'X-CSRFToken': '{{ csrf_token }}'}})
+        .then(r=>r.json()).then(d=>{
+            const el = document.getElementById('bj-result');
+            if(d.status!=='success') return showToast(d.message, 'error');
+            el.textContent = `نتیجه: ${d.result} | بازیکن ${d.player} - دیلر ${d.dealer} | تغییر: ${d.net_change}`;
+            showToast(`نتیجه بلک‌جک: ${d.result}`, d.result==='win'?'success':'info');
+        });
+    }
+
+    function playCrash() {
+        const bet = document.getElementById('crash-bet').value;
+        const target = document.getElementById('crash-target').value;
+        const fd = new FormData(); fd.append('bet', bet); fd.append('target', target);
+        fetch('/api/casino/crash/', {method:'POST', body:fd, headers: {'X-CSRFToken': '{{ csrf_token }}'}})
+        .then(r=>r.json()).then(d=>{
+            if(d.status!=='success') return showToast(d.message, 'error');
+            const el = document.getElementById('crash-result');
+            el.textContent = `کرش در ${d.crash_at}x | ${d.win ? 'برد' : 'باخت'} | تغییر: ${d.net_change}`;
+            showToast(d.win ? 'بردی!' : 'باختی!', d.win ? 'success':'error');
+        });
+    }
+
+    function playSlots() {
+        const bet = document.getElementById('slots-bet').value;
+        const fd = new FormData(); fd.append('bet', bet);
+        fetch('/api/casino/slots/', {method:'POST', body:fd, headers: {'X-CSRFToken': '{{ csrf_token }}'}})
+        .then(r=>r.json()).then(d=>{
+            if(d.status!=='success') return showToast(d.message, 'error');
+            const el = document.getElementById('slots-result');
+            el.textContent = `نتیجه: ${d.spin.join(' | ')} | پرداخت: ${d.payout} | تغییر: ${d.net_change}`;
+            showToast(d.payout ? `بردی: ${d.payout}` : 'چیزی نبردی', d.payout ? 'success':'info');
+        });
+    }
+</script>
+{% endblock %}

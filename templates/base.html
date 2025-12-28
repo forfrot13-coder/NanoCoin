@@ -1,0 +1,174 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="black">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}NanoBanana{% endblock %}</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Stack: Tailwind + DaisyUI + Alpine -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.1/dist/cdn.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Vazirmatn', 'Rajdhani', 'sans-serif'], pixel: ['"Press Start 2P"', 'cursive'] },
+                    colors: { nano: { yellow: '#FACC15', cyan: '#22D3EE', purple: '#D946EF', bg: '#050510' } },
+                    animation: { 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #050510; background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 24px 24px; }
+        .glass-nav { background: rgba(10, 10, 20, 0.95); backdrop-filter: blur(15px); border-top: 1px solid rgba(255,255,255,0.05); }
+        .glass-header { background: linear-gradient(to bottom, rgba(5,5,16,0.92), rgba(5,5,16,0.25)); backdrop-filter: blur(6px); }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        .no-select { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+        .neon-pulse { box-shadow: 0 0 25px rgba(56,189,248,0.35), 0 0 10px rgba(56,189,248,0.4); }
+        .glow-border { position: relative; overflow: hidden; }
+        .glow-border::after {
+            content: ""; position: absolute; inset: -2px; border-radius: inherit;
+            background: conic-gradient(from 90deg, rgba(217,70,239,0.35), rgba(6,182,212,0.35), rgba(236,72,153,0.35), rgba(217,70,239,0.35));
+            filter: blur(18px); opacity: .6; z-index: 0;
+        }
+        .shine-bar { position: relative; overflow: hidden; }
+        .shine-bar::before {
+            content:""; position:absolute; top:0; left:-40%; width:40%; height:100%;
+            background: linear-gradient(120deg, transparent, rgba(255,255,255,0.25), transparent);
+            transform: skewX(-20deg); animation: shimmer 4s infinite;
+        }
+        @keyframes shimmer { 0% { left:-40%; } 60% { left:120%; } 100% { left:120%; } }
+        @keyframes floaty { 0% { transform: translateY(0); } 50% { transform: translateY(-6px);} 100% { transform: translateY(0);} }
+        @keyframes glowPulse { 0%,100% { box-shadow: 0 0 18px rgba(217,70,239,0.35);} 50% { box-shadow: 0 0 26px rgba(6,182,212,0.5);} }
+    </style>
+</head>
+<body class="text-white min-h-screen flex flex-col pb-24 overflow-x-hidden no-select">
+
+    <!-- Header -->
+    {% if user.is_authenticated %}
+    <header class="fixed top-0 w-full z-50 glass-header px-4 md:px-6 py-2 transition-all duration-300">
+        <div class="flex items-center justify-between max-w-6xl mx-auto gap-4">
+            
+            <a href="/profile/" class="flex items-center gap-2 bg-gray-900/70 pr-2 pl-3 py-2 rounded-full border border-gray-700/60 backdrop-blur-md">
+                <div class="avatar {% if user.is_authenticated %}online{% endif %}">
+                    <div class="w-9 rounded-full ring ring-cyan-500 ring-offset-base-100 ring-offset-1">
+                        {% if user.playerprofile.avatar %}
+                            <img src="{{ user.playerprofile.avatar.image.url }}" />
+                        {% else %}
+                            <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=0D8ABC&color=fff" />
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="leading-tight">
+                    <div class="text-[9px] text-cyan-400 font-bold tracking-widest uppercase opacity-80">Operator</div>
+                    <div class="font-bold text-sm tracking-wide">{{ user.username }}</div>
+                </div>
+            </a>
+
+            <div class="hidden md:flex items-center gap-2 text-xs text-gray-300">
+                <div class="bg-black/60 px-3 py-2 rounded-lg border border-gray-700 shadow-lg flex items-center gap-2">
+                    <i class="fas fa-bolt text-yellow-400"></i>
+                    <div class="text-left">
+                        <div class="text-[9px] text-gray-400 uppercase tracking-wider">Coins</div>
+                        <div class="font-pixel text-sm text-yellow-300">{{ user.playerprofile.coins }}</div>
+                    </div>
+                </div>
+                <div class="bg-black/60 px-3 py-2 rounded-lg border border-cyan-800 shadow-lg flex items-center gap-2">
+                    <i class="fas fa-gem text-cyan-400"></i>
+                    <div class="text-left">
+                        <div class="text-[9px] text-gray-400 uppercase tracking-wider">Diamonds</div>
+                        <div class="font-bold text-sm text-cyan-300">{{ user.playerprofile.diamonds }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hidden md:flex items-center gap-2 text-sm text-gray-300">
+                <a href="/" class="px-3 py-1.5 rounded-lg border border-transparent hover:border-yellow-500/40 hover:text-yellow-200 {% if request.path == '/' %}bg-yellow-500/10 text-yellow-100{% endif %}"><i class="fas fa-bolt"></i></a>
+                <a href="/miners/" class="px-3 py-1.5 rounded-lg border border-transparent hover:border-green-500/40 hover:text-green-200 {% if 'miner' in request.path %}bg-green-500/10 text-green-100{% endif %}"><i class="fas fa-server"></i></a>
+                <a href="/shop/" class="px-3 py-1.5 rounded-lg border border-transparent hover:border-cyan-500/40 hover:text-cyan-200 {% if 'shop' in request.path %}bg-cyan-500/10 text-cyan-100{% endif %}"><i class="fas fa-shopping-cart"></i></a>
+                <a href="/market/" class="px-3 py-1.5 rounded-lg border border-transparent hover:border-purple-500/40 hover:text-purple-200 {% if 'market' in request.path %}bg-purple-500/10 text-purple-100{% endif %}"><i class="fas fa-store"></i></a>
+                <a href="/casino/" class="px-3 py-1.5 rounded-lg border border-transparent hover:border-pink-500/40 hover:text-pink-200 {% if 'casino' in request.path %}bg-pink-500/10 text-pink-100{% endif %}"><i class="fas fa-dice"></i></a>
+                <a href="/inventory/" class="px-3 py-1.5 rounded-lg border border-transparent hover:border-pink-500/40 hover:text-pink-200 {% if 'inventory' in request.path %}bg-pink-500/10 text-pink-100{% endif %}"><i class="fas fa-backpack"></i></a>
+                <a href="/leaderboard/" class="px-3 py-1.5 rounded-lg border border-transparent hover:border-orange-500/40 hover:text-orange-200 {% if 'leaderboard' in request.path %}bg-orange-500/10 text-orange-100{% endif %}"><i class="fas fa-trophy"></i></a>
+            </div>
+        </div>
+    </header>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="flex-grow pt-16 md:pt-20 px-4 md:px-8 max-w-5xl mx-auto w-full relative z-10">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Bottom Navigation -->
+    {% if user.is_authenticated %}
+    <nav class="fixed bottom-0 w-full z-50 md:hidden pb-safe">
+        <div class="max-w-md mx-auto px-3 pb-3">
+            <div class="rounded-2xl border border-white/10 bg-black/80 backdrop-blur-xl shadow-[0_-6px_25px_rgba(0,0,0,0.55)] px-3 py-2 flex items-center justify-between text-[10px] font-medium">
+                <a href="/" class="flex flex-col items-center gap-1 transition {% if request.path == '/' %}text-yellow-400{% else %}text-gray-500 hover:text-gray-300{% endif %}">
+                    <i class="fas fa-bolt text-lg"></i>
+                    <span class="opacity-80">خانه</span>
+                </a>
+
+                <a href="/miners/" class="flex flex-col items-center gap-1 transition {% if 'miner' in request.path %}text-green-400{% else %}text-gray-500 hover:text-gray-300{% endif %}">
+                    <i class="fas fa-server text-lg"></i>
+                    <span class="opacity-80">ماینر</span>
+                </a>
+
+                <a href="/shop/" class="flex flex-col items-center gap-1 transition text-cyan-200">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-t from-cyan-700 to-blue-500 flex items-center justify-center border border-cyan-400/50 shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+                        <i class="fas fa-shopping-cart text-white text-lg"></i>
+                    </div>
+                    <span class="opacity-80">فروشگاه</span>
+                </a>
+
+                <a href="/market/" class="flex flex-col items-center gap-1 transition {% if 'market' in request.path %}text-fuchsia-400{% else %}text-gray-500 hover:text-gray-300{% endif %}">
+                    <i class="fas fa-store text-lg"></i>
+                    <span class="opacity-80">مارکت</span>
+                </a>
+
+                <a href="/casino/" class="flex flex-col items-center gap-1 transition {% if 'casino' in request.path %}text-pink-400{% else %}text-gray-500 hover:text-gray-300{% endif %}">
+                    <i class="fas fa-dice text-lg"></i>
+                    <span class="opacity-80">کازینو</span>
+                </a>
+
+                <a href="/inventory/" class="flex flex-col items-center gap-1 transition {% if 'inventory' in request.path %}text-purple-400{% else %}text-gray-500 hover:text-gray-300{% endif %}">
+                    <i class="fas fa-box-open text-lg"></i>
+                    <span class="opacity-80">اینونتوری</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast toast-top toast-center z-[100] mt-14"></div>
+
+    <script>
+        function showToast(msg, type='info') {
+            const toast = document.createElement('div');
+            // استایل زیباتر برای توست‌ها
+            let bgClass = type === 'error' ? 'alert-error' : (type === 'success' ? 'alert-success' : 'alert-info');
+            toast.className = `alert ${bgClass} shadow-lg flex items-center gap-2 p-3 rounded-xl border border-white/10 animate-bounce text-xs font-bold`;
+            
+            let icon = type === 'success' ? '<i class="fas fa-check-circle"></i>' : (type === 'error' ? '<i class="fas fa-exclamation-circle"></i>' : '<i class="fas fa-info-circle"></i>');
+            
+            toast.innerHTML = `${icon} <span>${msg}</span>`;
+            document.getElementById('toast-container').appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+                setTimeout(() => toast.remove(), 500);
+            }, 2500);
+        }
+    </script>
+</body>
+</html>

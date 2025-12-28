@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<!-- Active Loadout -->
+<div class="bg-gray-900/80 p-4 rounded-xl border border-gray-700 mb-6 backdrop-blur-sm">
+    <div class="text-xs text-gray-400 mb-3 tracking-widest uppercase">Active Artifacts</div>
+    <div class="flex justify-center gap-4">
+        <!-- Slot 1 -->
+        <div class="flex flex-col items-center gap-1" onclick="unequip(1)">
+            <div class="w-16 h-16 rounded-lg border-2 border-dashed border-gray-600 bg-black/40 flex items-center justify-center relative hover:border-blue-500 transition cursor-pointer">
+                {% if profile.slot_1 %}
+                    <img src="{{ profile.slot_1.image.url }}" class="w-12 h-12 object-contain">
+                    <div class="absolute -top-2 -right-2 badge badge-xs badge-info">I</div>
+                {% else %}
+                    <i class="fas fa-plus text-gray-600"></i>
+                {% endif %}
+            </div>
+        </div>
+        <!-- Slot 2 -->
+        <div class="flex flex-col items-center gap-1" onclick="unequip(2)">
+            <div class="w-16 h-16 rounded-lg border-2 border-dashed border-gray-600 bg-black/40 flex items-center justify-center relative hover:border-blue-500 transition cursor-pointer">
+                {% if profile.slot_2 %}
+                    <img src="{{ profile.slot_2.image.url }}" class="w-12 h-12 object-contain">
+                    <div class="absolute -top-2 -right-2 badge badge-xs badge-info">II</div>
+                {% else %}
+                    <i class="fas fa-plus text-gray-600"></i>
+                {% endif %}
+            </div>
+        </div>
+        <!-- Slot 3 -->
+        <div class="flex flex-col items-center gap-1" onclick="unequip(3)">
+            <div class="w-16 h-16 rounded-lg border-2 border-dashed border-gray-600 bg-black/40 flex items-center justify-center relative hover:border-blue-500 transition cursor-pointer">
+                {% if profile.slot_3 %}
+                    <img src="{{ profile.slot_3.image.url }}" class="w-12 h-12 object-contain">
+                    <div class="absolute -top-2 -right-2 badge badge-xs badge-info">III</div>
+                {% else %}
+                    <i class="fas fa-plus text-gray-600"></i>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Storage Grid -->
+<h3 class="text-sm font-bold text-gray-300 mb-3 border-b border-gray-800 pb-2">STORAGE</h3>
+<div class="grid grid-cols-2 gap-3 pb-10">
+    {% for inv in inventory_items %}
+    <div class="card card-compact bg-gray-900 border border-gray-800 hover:border-gray-600 transition">
+        <div class="card-body p-3">
+            <div class="flex justify-between items-start">
+                <div class="badge badge-xs badge-outline">{{ inv.item.get_item_type_display }}</div>
+                <div class="text-xs text-yellow-500">x{{ inv.quantity }}</div>
+            </div>
+            
+            <div class="flex flex-col items-center my-2">
+                {% if inv.item.image %}
+                    <img src="{{ inv.item.image.url }}" class="h-12 object-contain">
+                {% else %}
+                    <span class="text-3xl">📦</span>
+                {% endif %}
+                <h4 class="font-bold text-sm mt-1">{{ inv.item.name }}</h4>
+            </div>
+
+            <div class="card-actions justify-center">
+                {% if inv.item.item_type == 'LOOT' or inv.item.item_type == 'GENERATOR' %}
+                    <div class="join">
+                        <button onclick="equipSlot({{ inv.item.id }}, 1)" class="btn btn-xs join-item btn-primary">1</button>
+                        <button onclick="equipSlot({{ inv.item.id }}, 2)" class="btn btn-xs join-item btn-primary">2</button>
+                        <button onclick="equipSlot({{ inv.item.id }}, 3)" class="btn btn-xs join-item btn-primary">3</button>
+                    </div>
+                {% elif inv.item.item_type == 'SKIN' %}
+                    <button onclick="equipSkin({{ inv.item.id }})" class="btn btn-xs btn-secondary w-full">تجهیز</button>
+                {% elif inv.item.item_type == 'MATERIAL' %}
+                    <button onclick="sellToShop({{ inv.item.id }}, {{ inv.item.sell_price }})" class="btn btn-xs btn-error btn-outline w-full">
+                        فروش ({{ inv.item.sell_price }} 💎)
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    function equipSlot(id, slot) {
+        const fd = new FormData(); fd.append('item_id', id); fd.append('slot_num', slot);
+        fetch('/api/equip-slot/', {method:'POST', body:fd, headers: {'X-CSRFToken': '{{ csrf_token }}'}})
+        .then(r=>r.json()).then(d=>{ showToast(d.message); if(d.status==='success') location.reload(); });
+    }
+    function unequip(slot) {
+        if(!confirm("حذف آیتم از اسلات؟")) return;
+        const fd = new FormData(); fd.append('slot_num', slot);
+        fetch('/api/equip-slot/', {method:'POST', body:fd, headers: {'X-CSRFToken': '{{ csrf_token }}'}})
+        .then(r=>r.json()).then(d=>{ if(d.status==='success') location.reload(); });
+    }
+    function sellToShop(id, price) {
+        if(!confirm(`فروش آیتم با ${price} الماس؟`)) return;
+        const fd = new FormData(); fd.append('item_id', id);
+        fetch('/api/sell-shop/', {method:'POST', body:fd, headers: {'X-CSRFToken': '{{ csrf_token }}'}})
+        .then(r=>r.json()).then(d=>{ showToast(d.message, d.status==='success'?'success':'error'); if(d.status==='success') location.reload(); });
+    }
+    function equipSkin(id) {
+        const fd = new FormData(); fd.append('item_id', id);
+        fetch('/api/equip/', {method:'POST', body:fd, headers: {'X-CSRFToken': '{{ csrf_token }}'}})
+        .then(r=>r.json()).then(d=>{ showToast(d.message); if(d.status==='success') location.reload(); });
+    }
+</script>
+{% endblock %}

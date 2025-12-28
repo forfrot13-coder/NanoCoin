@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div x-data="{ tab: 'ALL' }" class="pb-24 pt-4">
+    
+    <!-- 1. هدر و جستجو -->
+    <div class="sticky top-16 z-30 bg-[#050510]/95 backdrop-blur-xl py-2 -mx-4 px-4 border-b border-gray-800/50 mb-6">
+        <div class="relative">
+            <input type="text" name="q" placeholder="جستجوی تجهیزات..." 
+                   class="w-full bg-gray-900 border border-gray-700 text-white text-sm rounded-xl py-3 pr-10 pl-4 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all placeholder-gray-600 shadow-inner">
+            <i class="fas fa-search absolute top-3.5 right-3.5 text-gray-500"></i>
+        </div>
+
+        <!-- 2. تب‌بندی (Categories) -->
+        <div class="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
+            <button @click="tab = 'ALL'" 
+                    class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all border whitespace-nowrap"
+                    :class="tab === 'ALL' ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'">
+                همه
+            </button>
+            <button @click="tab = 'MINER'" 
+                    class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all border whitespace-nowrap"
+                    :class="tab === 'MINER' ? 'bg-green-500/20 border-green-500 text-green-400 shadow-[0_0_10px_rgba(34,197,94,0.3)]' : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'">
+                <i class="fas fa-server mr-1"></i> ماینر
+            </button>
+            <button @click="tab = 'SKIN'" 
+                    class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all border whitespace-nowrap"
+                    :class="tab === 'SKIN' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400 shadow-[0_0_10px_rgba(234,179,8,0.3)]' : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'">
+                <i class="fas fa-mask mr-1"></i> اسکین
+            </button>
+            <button @click="tab = 'AVATAR'" 
+                    class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all border whitespace-nowrap"
+                    :class="tab === 'AVATAR' ? 'bg-purple-500/20 border-purple-500 text-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.3)]' : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'">
+                <i class="fas fa-user-circle mr-1"></i> آواتار
+            </button>
+        </div>
+    </div>
+
+    <!-- 3. شبکه محصولات -->
+    <div class="grid grid-cols-2 gap-4">
+        {% for item in items %}
+        <div class="relative group bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-gray-600 transition-all duration-300 {% if item.stock == 0 %}grayscale opacity-75{% endif %}"
+             x-show="tab === 'ALL' || tab === '{{ item.item_type }}'"
+             x-transition.opacity.duration.300ms>
+            
+            <!-- بج موجودی (Stock Badge) -->
+            <div class="absolute top-2 left-2 z-10">
+                {% if item.stock == -1 %}
+                    <div class="badge badge-success badge-xs gap-1 font-bold shadow-[0_0_5px_lime]">
+                        <i class="fas fa-infinity text-[8px]"></i> نامحدود
+                    </div>
+                {% elif item.stock == 0 %}
+                    <div class="badge badge-error badge-xs font-bold shadow-[0_0_5px_red]">
+                        تمام شد
+                    </div>
+                {% else %}
+                    <div class="badge badge-warning badge-xs font-bold">
+                        {{ item.stock }} عدد
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- بج کد آیتم -->
+            <div class="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span class="text-[8px] bg-black/80 px-1.5 py-0.5 rounded text-gray-400 border border-gray-700 font-mono">{{ item.item_code }}</span>
+            </div>
+
+            <!-- تصویر محصول -->
+            <div class="h-32 w-full bg-gradient-to-b from-gray-800/50 to-transparent flex items-center justify-center p-4 relative group-hover:bg-gray-800/80 transition-colors">
+                <!-- افکت نور پشت عکس -->
+                <div class="absolute inset-0 bg-cyan-500/5 blur-xl rounded-full scale-50 group-hover:scale-75 transition-transform duration-500"></div>
+                
+                {% if item.image %}
+                    <img src="{{ item.image.url }}" class="h-full w-full object-contain drop-shadow-lg group-hover:scale-110 transition-transform duration-300">
+                {% else %}
+                    <i class="fas fa-box-open text-5xl text-gray-700"></i>
+                {% endif %}
+            </div>
+            
+            <!-- اطلاعات محصول -->
+            <div class="p-3">
+                <h3 class="font-bold text-sm text-gray-200 truncate">{{ item.name }}</h3>
+                
+                <!-- مشخصات فنی (بر اساس نوع) -->
+                <div class="h-6 mt-1">
+                    {% if item.item_type == 'MINER' %}
+                        <div class="text-[10px] text-gray-500 flex items-center gap-1">
+                            <i class="fas fa-tachometer-alt text-yellow-600"></i>
+                            <span dir="ltr">Power: {{ item.mining_rate }}/h</span>
+                        </div>
+                    {% elif item.item_type == 'SKIN' %}
+                        <div class="text-[10px] text-purple-400">Skin Item</div>
+                    {% endif %}
+                </div>
+
+                <!-- فوتر: قیمت و دکمه -->
+                <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
+                    <div class="text-xs font-bold text-yellow-400 flex items-center gap-1 drop-shadow-sm">
+                        {{ item.price_diamonds }} <i class="fas fa-gem text-[10px]"></i>
+                    </div>
+                    
+                    <button onclick="buyItem({{ item.id }})" 
+                            class="btn btn-xs {% if item.stock == 0 %}btn-disabled bg-gray-800 text-gray-600{% else %}btn-primary shadow-[0_0_10px_rgba(6,182,212,0.4)]{% endif %} px-4">
+                        {% if item.stock == 0 %}
+                            <i class="fas fa-lock"></i>
+                        {% else %}
+                            خرید
+                        {% endif %}
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Empty State -->
+    <div x-show="$el.previousElementSibling.children.length === 0" class="text-center py-20 text-gray-500 hidden">
+        <i class="fas fa-search text-4xl mb-4 opacity-20"></i>
+        <p>آیتمی پیدا نشد</p>
+    </div>
+
+</div>
+
+<script>
+    function buyItem(id) {
+        // ایجاد افکت ویبره برای موبایل
+        if (navigator.vibrate) navigator.vibrate(10);
+        
+        if(!confirm("آیا از خرید این آیتم مطمئن هستید؟")) return;
+
+        const fd = new FormData(); 
+        fd.append('item_id', id);
+        
+        // نمایش لودینگ (اختیاری)
+        
+        fetch('/api/buy/', { 
+            method: 'POST', 
+            body: fd, 
+            headers: {'X-CSRFToken': '{{ csrf_token }}'} 
+        })
+        .then(r => r.json())
+        .then(d => {
+            showToast(d.message, d.status === 'success' ? 'success' : 'error');
+            if(d.status === 'success') {
+                // ریلود صفحه با کمی تاخیر برای دیدن توست
+                setTimeout(()=>location.reload(), 1000);
+            }
+        })
+        .catch(err => showToast("خطا در ارتباط با سرور", "error"));
+    }
+</script>
+
+<style>
+    /* مخفی کردن اسکرول بار در تب‌ها */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>
+{% endblock %}

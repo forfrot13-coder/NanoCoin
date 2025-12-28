@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="flex flex-col h-full">
+    
+    <!-- Code Input -->
+    <div class="join w-full mb-6">
+        <input type="text" id="promo-code" placeholder="کد جایزه (PROMO)" class="input input-bordered join-item w-full bg-gray-900 text-center tracking-widest uppercase">
+        <button onclick="redeem()" class="btn btn-primary join-item">ثبت</button>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto bg-gray-900 rounded-xl border border-gray-700">
+        <table class="table table-sm">
+            <thead>
+                <tr class="text-gray-500 border-b border-gray-700">
+                    <th>#</th>
+                    <th>کاربر</th>
+                    <th class="text-right">امتیاز</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for player in top_players %}
+                <tr class="border-gray-800 {% if forloop.counter == 1 %}bg-yellow-900/20{% elif forloop.counter == 2 %}bg-gray-800/50{% elif forloop.counter == 3 %}bg-orange-900/20{% endif %}">
+                    <td class="font-bold text-lg">
+                        {% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% else %}{{ forloop.counter }}{% endif %}
+                    </td>
+                    <td>
+                        <div class="flex items-center gap-2">
+                            <div class="avatar placeholder">
+                                <div class="bg-neutral text-neutral-content rounded-full w-8">
+                                    {% if player.avatar %}<img src="{{ player.avatar.image.url }}">{% else %}<span>{{ player.user.username|slice:":1" }}</span>{% endif %}
+                                </div>
+                            </div>
+                            <span class="{% if request.user == player.user %}text-cyan-400 font-bold{% endif %}">
+                                {{ player.user.username }}
+                            </span>
+                        </div>
+                    </td>
+                    <td class="text-right font-mono text-yellow-500">{{ player.coins }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function redeem() {
+        const c = document.getElementById('promo-code').value;
+        if(!c) return;
+        const fd = new FormData(); fd.append('code', c);
+        fetch('/api/redeem/', {method:'POST', body:fd, headers: {'X-CSRFToken': '{{ csrf_token }}'}})
+        .then(r=>r.json()).then(d=>{ showToast(d.message, d.status==='success'?'success':'warning'); });
+    }
+</script>
+{% endblock %}
