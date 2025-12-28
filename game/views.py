@@ -265,9 +265,31 @@ def shop_page(request):
             Q(name__icontains=search_query) |
             Q(item_code__icontains=search_query)
         )
-
+    
+    # Serialize items to JSON for the template
+    import json
+    from django.core.serializers.json import DjangoJSONEncoder
+    
+    items_data = []
+    for item in items:
+        item_dict = {
+            'id': item.id,
+            'name': item.name,
+            'item_type': item.item_type,
+            'item_code': item.item_code,
+            'description': item.description,
+            'price_diamonds': item.price_diamonds,
+            'stock': item.stock,
+            'mining_rate': item.mining_rate,
+            'buff_click_coins': item.buff_click_coins,
+            'buff_mining_speed': item.buff_mining_speed,
+        }
+        if item.image:
+            item_dict['image_url'] = item.image.url
+        items_data.append(item_dict)
+    
     return render(request, 'shop.html', {
-        'items': items,
+        'items_json': json.dumps(items_data, DjangoJSONEncoder),
         'current_cat': category
     })
 
@@ -275,10 +297,24 @@ def shop_page(request):
 @login_required(login_url='/login/')
 def miner_room(request):
     profile = request.user.playerprofile
-    miners = Inventory.objects.filter(player=profile, item__item_type='MINER', quantity__gt=0)
+    # Optimize: Use select_related and aggregate functions
+    miners = Inventory.objects.filter(
+        player=profile,
+        item__item_type='MINER',
+        quantity__gt=0
+    ).select_related('item')
+    
     active_miners = miners.filter(is_active=True)
-    total_rate = sum(m.item.mining_rate * m.quantity for m in active_miners)
-    total_consumption = sum(m.item.electricity_consumption * m.quantity for m in active_miners)
+    
+    # Use database aggregation instead of Python loops
+    from django.db.models import F, Sum
+    stats = active_miners.aggregate(
+        total_rate=Sum(F('item__mining_rate') * F('quantity')),
+        total_consumption=Sum(F('item__electricity_consumption') * F('quantity'))
+    )
+    
+    total_rate = stats['total_rate'] or 0
+    total_consumption = stats['total_consumption'] or 0
 
     energy_packs = GameItem.objects.filter(item_type='ENERGY')
 
@@ -293,9 +329,18 @@ def miner_room(request):
 
 @login_required(login_url='/login/')
 def market_page(request):
-    listings = MarketListing.objects.exclude(seller=request.user.playerprofile).order_by('-created_at')
-    my_inventory = Inventory.objects.filter(player=request.user.playerprofile, quantity__gt=0)
-    auctions = AuctionListing.objects.filter(is_active=True, ends_at__gt=timezone.now()).select_related('item', 'seller', 'current_bidder')
+    # Optimize: Use select_related for related fields
+    listings = MarketListing.objects.exclude(
+        seller=request.user.playerprofile
+    ).select_related('item', 'seller', 'seller__user').order_by('-created_at')[:100]
+    
+    my_inventory = Inventory.objects.filter(
+        player=request.user.playerprofile, quantity__gt=0
+    ).select_related('item')
+    
+    auctions = AuctionListing.objects.filter(
+        is_active=True, ends_at__gt=timezone.now()
+    ).select_related('item', 'seller', 'current_bidder')
 
     return render(request, 'market.html', {
         'listings': listings,
@@ -307,7 +352,10 @@ def market_page(request):
 @login_required(login_url='/login/')
 def inventory_page(request):
     profile = request.user.playerprofile
-    inventory_items = Inventory.objects.filter(player=profile, quantity__gt=0).exclude(item__item_type='ENERGY')
+    # Optimize: Use select_related to reduce queries
+    inventory_items = Inventory.objects.filter(
+        player=profile, quantity__gt=0
+    ).exclude(item__item_type='ENERGY').select_related('item')
     return render(request, 'inventory.html', {
         'inventory_items': inventory_items,
         'profile': profile
@@ -316,7 +364,8 @@ def inventory_page(request):
 
 @login_required(login_url='/login/')
 def leaderboard_page(request):
-    top_players = PlayerProfile.objects.order_by('-diamonds')[:10]
+    # Optimize: Use select_related and limit results
+    top_players = PlayerProfile.objects.select_related('user').order_by('-diamonds')[:100]
     return render(request, 'leaderboard.html', {'top_players': top_players})
 
 
