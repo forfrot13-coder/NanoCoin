@@ -7,6 +7,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('game.urls')),  # ارجاع به اپلیکیشن game
+    path('api/', include('game.api_urls')),  # REST API
 ]
 
 if settings.DEBUG:

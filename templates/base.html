@@ -4,7 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>{% block title %}NanoBanana{% endblock %}</title>
+    <title>{% block title %}NanoCoin{% endblock %}</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#050510">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="NanoCoin">
+    <meta name="description" content="بازی ماینینگ و کلیکر نئوکوین">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="/static/game/manifest.json">
+    <link rel="apple-touch-icon" href="/static/game/img/icon-180.png">
+    <link rel="icon" type="image/png" href="/static/game/img/icon-192.png">
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -15,6 +29,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css" />
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.1/dist/cdn.min.js"></script>
+
+    <!-- Game Animations -->
+    <link rel="stylesheet" href="/static/game/css/animations.css">
 
     <script>
         tailwind.config = {
@@ -168,6 +185,19 @@
                 toast.classList.add('opacity-0', 'transition-opacity', 'duration-500');
                 setTimeout(() => toast.remove(), 500);
             }, 2500);
+        }
+
+        // Register Service Worker for PWA support
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/game/js/service-worker.js')
+                    .then((registration) => {
+                        console.log('[SW] Service Worker registered with scope:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.log('[SW] Service Worker registration failed:', error);
+                    });
+            });
         }
     </script>
 </body>

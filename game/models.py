@@ -188,3 +188,42 @@ class AuctionListing(models.Model):
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         PlayerProfile.objects.get_or_create(user=instance)
+
+
+class PrestigeMultiplier(models.Model):
+    """
+    Tracks player's prestige level and multiplier.
+    Prestige allows players to reset progress for permanent bonuses.
+    """
+    player = models.OneToOneField(PlayerProfile, on_delete=models.CASCADE, related_name='prestige')
+    prestige_count = models.IntegerField(default=0)
+    prestige_multiplier = models.FloatField(default=1.0)
+    last_prestige_date = models.DateTimeField(null=True, blank=True)
+    
+    def __str__(self):
+        return f"{self.player.user.username} - Prestige {self.prestige_count}"
+    
+    def calculate_next_milestone(self):
+        """Calculate coins needed for next prestige."""
+        base_cost = 1_000_000
+        return int(base_cost * (1.5 ** self.prestige_count))
+
+
+class PrestigeReward(models.Model):
+    """
+    Predefined rewards for reaching prestige milestones.
+    """
+    prestige_level = models.IntegerField()
+    reward_type = models.CharField(max_length=20, choices=[
+        ('DIAMONDS', 'Diamonds'),
+        ('BONUS_MULTIPLIER', 'Bonus Multiplier'),
+        ('SPECIAL_ITEM', 'Special Item'),
+    ])
+    reward_amount = models.IntegerField()
+    description = models.TextField(blank=True)
+    
+    class Meta:
+        unique_together = ('prestige_level', 'reward_type')
+    
+    def __str__(self):
+        return f"Prestige {self.prestige_level} - {self.reward_type}: {self.reward_amount}"
